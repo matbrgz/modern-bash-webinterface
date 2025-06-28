@@ -1,0 +1,735 @@
+title: "ShellUI - Modern Command Interface"
+theme: system
+
+# Enable auto-help feature for commands
+features:
+  auto_help: true
+  show_command_help: true
+  visual_param_builder: true
+
+auth:
+  enabled: false
+
+commands:
+  # Network Commands
+  - id: ping-internet
+    title: "Ping the Internet"
+    description: "Test internet connectivity using multiple methods"
+    icon: Wifi
+    category: "Network"
+    shell: /bin/bash
+    auto_help: true
+    help_command: |
+      echo "Tests internet connectivity using multiple fallback methods:"
+      echo ""
+      echo "1. Netcat (nc) - Tests port connectivity"
+      echo "2. Curl - HTTP connectivity test"
+      echo "3. DNS lookup - Domain resolution test"
+      echo ""
+      echo "Targets tested:"
+      echo "- 8.8.8.8:53 (Google DNS)"
+      echo "- 1.1.1.1:53 (Cloudflare DNS)"
+      echo "- google.com (HTTP)"
+    command: |
+      echo "🌐 Testing internet connectivity..."
+      echo "========================================"
+      
+      # Test with multiple DNS servers
+      dns_servers=("8.8.8.8" "1.1.1.1" "208.67.222.222")
+      dns_working=false
+      
+      for dns in "${dns_servers[@]}"; do
+        echo "🔍 Testing DNS server: $dns"
+        if command -v nc &> /dev/null; then
+          if timeout 3 nc -z -w3 "$dns" 53 2>/dev/null; then
+            echo "✅ $dns:53 - Reachable via netcat"
+            dns_working=true
+            break
+          else
+            echo "❌ $dns:53 - Not reachable"
+          fi
+        else
+          echo "⚠️  netcat not available, skipping $dns"
+        fi
+      done
+      
+      # Test HTTP connectivity
+      echo ""
+      echo "🌍 Testing HTTP connectivity..."
+      if command -v curl &> /dev/null; then
+        if timeout 5 curl -s --max-time 5 -o /dev/null http://google.com; then
+          echo "✅ HTTP connectivity - OK"
+        else
+          echo "❌ HTTP connectivity - Failed"
+        fi
+      else
+        echo "⚠️  curl not available for HTTP test"
+      fi
+      
+      # Test HTTPS connectivity
+      if command -v curl &> /dev/null; then
+        if timeout 5 curl -s --max-time 5 -o /dev/null https://google.com; then
+          echo "✅ HTTPS connectivity - OK"
+        else
+          echo "❌ HTTPS connectivity - Failed"
+        fi
+      fi
+      
+      # Summary
+      echo ""
+      echo "📊 Summary:"
+      if [ "$dns_working" = true ]; then
+        echo "✅ Internet connection appears to be working"
+      else
+        echo "❌ Internet connection issues detected"
+      fi
+    timeout: 15000
+
+  - id: ping-host-advanced
+    title: "Advanced Ping Test"
+    description: "Comprehensive network connectivity test with multiple options"
+    icon: Wifi
+    category: "Network"
+    shell: /bin/bash
+    auto_help: true
+    help_command: |
+      # Capture actual ping help if available
+      if command -v ping &> /dev/null; then
+        echo "=== PING COMMAND HELP ==="
+        ping --help 2>/dev/null || ping -h 2>/dev/null || man ping 2>/dev/null | head -30 || echo "Ping help not available"
+        echo ""
+      fi
+      
+      # Additional methods help
+      echo "=== ALTERNATIVE CONNECTIVITY TESTS ==="
+      echo "If ping is not available or lacks privileges, this command uses:"
+      echo ""
+      echo "• Netcat (nc) - Port connectivity testing"
+      echo "• Telnet - Basic connection testing"  
+      echo "• Curl - HTTP/HTTPS connectivity testing"
+      echo "• Nmap - Advanced port scanning (if available)"
+      echo ""
+      echo "Common ports tested:"
+      echo "• 22 (SSH), 23 (Telnet), 25 (SMTP), 53 (DNS)"
+      echo "• 80 (HTTP), 443 (HTTPS), 993 (IMAPS), 995 (POP3S)"
+    command: |
+      host="{{ host }}"
+      port="{{ port }}"
+      count="{{ count }}"
+      timeout_val="{{ timeout }}"
+      method="{{ method }}"
+      
+      echo "🎯 Advanced connectivity test for: $host"
+      echo "=============================================="
+      echo "📊 Parameters:"
+      echo "   Host: $host"
+      echo "   Port: $port"
+      echo "   Method: $method"
+      echo "   Count: $count"
+      echo "   Timeout: ${timeout_val}s"
+      echo ""
+      
+      case "$method" in
+        "ping")
+          echo "🏓 Using PING method..."
+          if command -v ping &> /dev/null; then
+            # Try different ping variants
+            if ping -c 1 -W 1 "$host" &>/dev/null; then
+              # Linux style
+              ping -c "$count" -W "$timeout_val" "$host"
+            elif ping -c 1 -t "$timeout_val" "$host" &>/dev/null; then
+              # BSD/macOS style  
+              ping -c "$count" -t "$timeout_val" "$host"
+            else
+              echo "❌ Ping failed - trying alternative method..."
+              method="netcat"
+            fi
+          else
+            echo "❌ Ping not available - using netcat"
+            method="netcat"
+          fi
+          ;;
+      esac
+      
+      if [ "$method" = "netcat" ] || [ "$method" = "nc" ]; then
+        echo "🔌 Using NETCAT method..."
+        if command -v nc &> /dev/null; then
+          for i in $(seq 1 "$count"); do
+            echo "Attempt $i/$count:"
+            if timeout "$timeout_val" nc -z -v "$host" "$port" 2>&1; then
+              echo "✅ $host:$port is reachable"
+            else
+              echo "❌ $host:$port is not reachable"
+            fi
+            [ "$i" -lt "$count" ] && sleep 1
+          done
+        else
+          echo "❌ netcat not available - trying telnet"
+          method="telnet"
+        fi
+      fi
+      
+      if [ "$method" = "telnet" ]; then
+        echo "📞 Using TELNET method..."
+        if command -v telnet &> /dev/null; then
+          for i in $(seq 1 "$count"); do
+            echo "Attempt $i/$count:"
+            if timeout "$timeout_val" telnet "$host" "$port" </dev/null 2>&1 | grep -q "Connected\|Escape"; then
+              echo "✅ $host:$port is reachable via telnet"
+            else
+              echo "❌ $host:$port connection failed"
+            fi
+            [ "$i" -lt "$count" ] && sleep 1
+          done
+        else
+          echo "❌ telnet not available - trying curl"
+          method="curl"
+        fi
+      fi
+      
+      if [ "$method" = "curl" ]; then
+        echo "🌐 Using CURL method..."
+        if command -v curl &> /dev/null; then
+          for i in $(seq 1 "$count"); do
+            echo "Attempt $i/$count:"
+            if [ "$port" = "80" ]; then
+              url="http://$host"
+            elif [ "$port" = "443" ]; then
+              url="https://$host"
+            else
+              url="http://$host:$port"
+            fi
+            
+            if timeout "$timeout_val" curl -s --max-time "$timeout_val" -o /dev/null "$url"; then
+              echo "✅ $url is reachable"
+            else
+              echo "❌ $url is not reachable"
+            fi
+            [ "$i" -lt "$count" ] && sleep 1
+          done
+        else
+          echo "❌ No connectivity testing tools available"
+        fi
+      fi
+      
+      if [ "$method" = "nmap" ]; then
+        echo "🗺️  Using NMAP method..."
+        if command -v nmap &> /dev/null; then
+          echo "Scanning $host:$port..."
+          nmap -p "$port" --host-timeout "${timeout_val}s" "$host"
+        else
+          echo "❌ nmap not available - falling back to netcat"
+          method="netcat"
+        fi
+      fi
+      
+      # DNS resolution test
+      echo ""
+      echo "🔍 DNS Resolution Test:"
+      if command -v nslookup &> /dev/null; then
+        nslookup "$host" 2>/dev/null || echo "❌ DNS resolution failed"
+      elif command -v dig &> /dev/null; then
+        dig +short "$host" 2>/dev/null || echo "❌ DNS resolution failed"
+      elif command -v host &> /dev/null; then
+        host "$host" 2>/dev/null || echo "❌ DNS resolution failed"
+      else
+        echo "⚠️  No DNS lookup tools available"
+      fi
+      
+      echo ""
+      echo "✅ Advanced connectivity test completed"
+    timeout: 30000
+    args:
+      - name: host
+        type: text
+        label: "Host or IP Address"
+        placeholder: "google.com or 8.8.8.8"
+        required: true
+        default: "google.com"
+        help: "Enter hostname (google.com) or IP address (8.8.8.8)"
+      - name: port
+        type: number
+        label: "Port"
+        default: 80
+        min: 1
+        max: 65535
+        help: "Port number to test (80=HTTP, 443=HTTPS, 22=SSH, 53=DNS)"
+      - name: count
+        type: number
+        label: "Number of Tests"
+        default: 3
+        min: 1
+        max: 10
+        help: "How many connectivity tests to perform"
+      - name: timeout
+        type: number
+        label: "Timeout (seconds)"
+        default: 5
+        min: 1
+        max: 30
+        help: "Maximum time to wait for each test"
+      - name: method
+        type: select
+        label: "Testing Method"
+        default: "ping"
+        help: "Choose the connectivity testing method"
+        options:
+          - value: "ping"
+            label: "ICMP Ping (requires privileges)"
+          - value: "netcat"
+            label: "Netcat (port connectivity)"
+          - value: "telnet"
+            label: "Telnet (basic connection)"
+          - value: "curl"
+            label: "HTTP/HTTPS (web connectivity)"
+          - value: "nmap"
+            label: "Nmap (port scanning)"
+
+  # System Information
+  - id: check-disk-space
+    title: "Check Disk Space"
+    description: "View disk usage information with detailed analysis"
+    icon: HardDrive
+    category: "System"
+    shell: /bin/bash
+    auto_help: true
+    help_command: "df --help 2>/dev/null || echo 'Shows disk space usage for all mounted filesystems with human-readable sizes'"
+    command: |
+      echo "💾 DISK SPACE ANALYSIS"
+      echo "======================"
+      echo ""
+      echo "📊 Filesystem Usage:"
+      df -h 2>/dev/null || df
+      
+      echo ""
+      echo "🔍 Largest Directories (Top 10):"
+      if [ "{{ include_subdirs }}" = "true" ]; then
+        find {{ target_path }} -maxdepth {{ max_depth }} -type d -exec du -sh {} \; 2>/dev/null | sort -hr | head -10
+      else
+        du -sh {{ target_path }}/* 2>/dev/null | sort -hr | head -10
+      fi
+      
+      echo ""
+      echo "⚠️  Disk Usage Warnings:"
+      df -h | awk 'NR>1 {if($5+0 > 80) print "WARNING: " $6 " is " $5 " full"}'
+      
+      if [ "{{ show_inodes }}" = "true" ]; then
+        echo ""
+        echo "📁 Inode Usage:"
+        df -i 2>/dev/null | awk 'NR>1 {if($5+0 > 80) print "WARNING: " $6 " inodes " $5 " used"}'
+      fi
+    args:
+      - name: target_path
+        type: text
+        label: "Target Path"
+        default: "."
+        placeholder: "/home/user"
+        help: "Directory to analyze for largest subdirectories"
+      - name: include_subdirs
+        type: boolean
+        label: "Include Subdirectories"
+        default: true
+        help: "Analyze subdirectories recursively"
+      - name: max_depth
+        type: number
+        label: "Maximum Depth"
+        default: 2
+        min: 1
+        max: 5
+        help: "How deep to search in directory tree"
+      - name: show_inodes
+        type: boolean
+        label: "Show Inode Usage"
+        default: false
+        help: "Display inode usage information"
+
+  - id: check-dmesg-logs
+    title: "Check System Logs"
+    description: "View system kernel messages"
+    icon: Search
+    category: "System"
+    shell: /bin/bash
+    help_command: "echo 'Shows recent kernel messages and system logs'"
+    command: |
+      echo "=== RECENT KERNEL MESSAGES (dmesg) ==="
+      if [ -r /var/log/dmesg ]; then
+        dmesg | tail -{{ lines }}
+      else
+        echo "dmesg not accessible, trying journalctl..."
+        journalctl -k -n {{ lines }} 2>/dev/null || echo "No kernel logs accessible"
+      fi
+      echo ""
+      echo "=== RECENT SYSTEM LOGS ==="
+      if [ -r /var/log/syslog ]; then
+        tail -{{ lines }} /var/log/syslog
+      elif [ -r /var/log/messages ]; then
+        tail -{{ lines }} /var/log/messages
+      else
+        journalctl -n {{ lines }} 2>/dev/null || echo "No system logs accessible"
+      fi
+    args:
+      - name: lines
+        type: number
+        label: "Number of lines"
+        default: 20
+        min: 5
+        max: 100
+        help: "How many log lines to display"
+
+  - id: date
+    title: "Date & Time"
+    description: "Show current date and time"
+    icon: Clock
+    category: "System"
+    shell: /bin/bash
+    help_command: "date --help 2>/dev/null || echo 'Shows current system date and time in various formats'"
+    command: |
+      echo "=== CURRENT DATE & TIME ==="
+      echo "Local time: $(date)"
+      echo "UTC time: $(date -u)"
+      echo "Unix timestamp: $(date +%s)"
+      echo "ISO format: $(date -I)"
+      echo ""
+      echo "=== SYSTEM UPTIME ==="
+      uptime
+
+  - id: system-info
+    title: "System Information"
+    description: "Comprehensive system information"
+    icon: Info
+    category: "System"
+    shell: /bin/bash
+    help_command: "echo 'Displays comprehensive system information including CPU, memory, disk, and network'"
+    command: |
+      echo "=== SYSTEM INFORMATION ==="
+      echo "Hostname: $(hostname)"
+      echo "OS: $(uname -o 2>/dev/null || uname)"
+      echo "Kernel: $(uname -r)"
+      echo "Architecture: $(uname -m)"
+      echo "Uptime: $(uptime)"
+      echo ""
+      echo "=== MEMORY USAGE ==="
+      free -h 2>/dev/null || echo "Memory info not available"
+      echo ""
+      echo "=== CPU INFORMATION ==="
+      if command -v lscpu &> /dev/null; then
+        lscpu | head -10
+      else
+        cat /proc/cpuinfo | grep "model name\|cpu cores\|siblings" | head -5 2>/dev/null || echo "CPU info not available"
+      fi
+      echo ""
+      echo "=== DISK USAGE ==="
+      df -h | head -10
+
+  # Docker Commands
+  - id: restart-docker-container
+    title: "Restart Docker Container"
+    description: "Restart a Docker container"
+    icon: RefreshCw
+    category: "Docker"
+    shell: /bin/bash
+    help_command: "docker restart --help 2>/dev/null || echo 'Restart specified Docker container'"
+    command: |
+      if command -v docker &> /dev/null; then
+        echo "🔄 Restarting container: {{ container }}"
+        if docker restart "{{ container }}"; then
+          echo "✅ Container {{ container }} restarted successfully"
+          echo ""
+          echo "📊 Container status:"
+          docker ps --filter "name={{ container }}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+        else
+          echo "❌ Failed to restart container {{ container }}"
+          echo "💡 Available containers:"
+          docker ps -a --format "table {{.Names}}\t{{.Status}}"
+        fi
+      else
+        echo "❌ Docker not available"
+      fi
+    confirm: true
+    args:
+      - name: container
+        type: text
+        label: "Container Name or ID"
+        placeholder: "my-container"
+        required: true
+        help: "Enter container name or ID to restart"
+
+  - id: docker-ps
+    title: "List Docker Containers"
+    description: "Show Docker containers with various formats"
+    icon: Package
+    category: "Docker"
+    shell: /bin/bash
+    help_command: "docker ps --help 2>/dev/null || echo 'Docker not available'"
+    command: |
+      if command -v docker &> /dev/null; then
+        echo "=== DOCKER CONTAINERS ==="
+        docker ps {{ format }} {{ extra_options }}
+      else
+        echo "❌ Docker not installed or not accessible"
+        echo "📦 Install Docker: https://docs.docker.com/get-docker/"
+      fi
+    args:
+      - name: format
+        type: select
+        label: "Display Format"
+        default: ""
+        help: "Choose how to display container information"
+        options:
+          - value: ""
+            label: "Default view (running only)"
+          - value: "-a"
+            label: "All containers (including stopped)"
+          - value: "--format table"
+            label: "Table format"
+          - value: "--format json"
+            label: "JSON format"
+      - name: extra_options
+        type: text
+        label: "Extra Options"
+        placeholder: "--filter status=running"
+        help: "Additional docker ps options (e.g., --filter, --quiet)"
+
+  # Maintenance Commands
+  - id: run-backup-script
+    title: "Run Backup Script"
+    description: "Execute backup routine with verification"
+    icon: Save
+    category: "Maintenance"
+    shell: /bin/bash
+    help_command: "echo 'Execute custom backup scripts with pre-check verification'"
+    command: |
+      echo "🔄 Starting backup process..."
+      echo "📂 Script path: {{ script_path }}"
+      
+      if [ -f "{{ script_path }}" ]; then
+        if [ -r "{{ script_path }}" ]; then
+          echo "✅ Script file exists and is readable"
+          echo ""
+          if [ "{{ dry_run }}" = "true" ]; then
+            echo "🔍 DRY RUN MODE - Script would execute:"
+            echo "Command: bash {{ script_path }} {{ script_args }}"
+          else
+            echo "🚀 Executing backup script..."
+            bash "{{ script_path }}" {{ script_args }}
+            exit_code=$?
+            if [ $exit_code -eq 0 ]; then
+              echo "✅ Backup completed successfully"
+            else
+              echo "❌ Backup failed with exit code: $exit_code"
+            fi
+          fi
+        else
+          echo "❌ Script file exists but is not readable"
+          exit 1
+        fi
+      else
+        echo "❌ Backup script not found at {{ script_path }}"
+        echo "💡 Available scripts in current directory:"
+        find . -name "*.sh" -type f 2>/dev/null | head -10
+        exit 1
+      fi
+    confirm: true
+    args:
+      - name: script_path
+        type: text
+        label: "Backup Script Path"
+        placeholder: "/home/user/backup.sh"
+        default: "./backup.sh"
+        required: true
+        help: "Full path to the backup script"
+      - name: script_args
+        type: text
+        label: "Script Arguments"
+        placeholder: "--verbose --destination /backup"
+        help: "Additional arguments to pass to the script"
+      - name: dry_run
+        type: boolean
+        label: "Dry Run (Test Mode)"
+        default: false
+        help: "Preview what would be executed without running it"
+
+  - id: delete-old-backups
+    title: "Delete Old Backups"
+    description: "Remove backups older than specified days"
+    icon: Trash2
+    category: "Maintenance"
+    shell: /bin/bash
+    command: |
+      echo "Searching for backups older than {{ days }} days in {{ backup_dir }}..."
+      find "{{ backup_dir }}" -name "*.backup" -type f -mtime +{{ days }} -print
+      echo ""
+      echo "Do you want to delete these files? (This is a dry run, use confirm=true to actually delete)"
+    confirm: true
+    args:
+      - name: backup_dir
+        type: text
+        label: "Backup Directory"
+        placeholder: "/backups"
+        default: "/backups"
+        required: true
+      - name: days
+        type: number
+        label: "Days Old"
+        default: 30
+        min: 1
+        max: 365
+
+  # Services Management
+  - id: restart-httpd
+    title: "Restart HTTP Server"
+    description: "Restart web server (httpd/nginx/apache)"
+    icon: RefreshCw
+    category: "Services"
+    shell: /bin/bash
+    command: |
+      echo "Attempting to restart {{ service }} on {{ server }}..."
+      if [ "{{ server }}" = "localhost" ]; then
+        sudo systemctl restart {{ service }}
+        sudo systemctl status {{ service }} --no-pager
+      else
+        ssh {{ server }} "sudo systemctl restart {{ service }} && sudo systemctl status {{ service }} --no-pager"
+      fi
+    confirm: true
+    args:
+      - name: service
+        type: select
+        label: "Service"
+        default: "nginx"
+        options:
+          - value: "nginx"
+            label: "Nginx"
+          - value: "apache2"
+            label: "Apache2"
+          - value: "httpd"
+            label: "HTTPd"
+      - name: server
+        type: text
+        label: "Server"
+        default: "localhost"
+        placeholder: "server1 or IP address"
+
+  # Automation & Scripts
+  - id: run-automation-playbook
+    title: "Run Automation Playbook"
+    description: "Execute Ansible playbook or automation script"
+    icon: Play
+    category: "Automation"
+    shell: /bin/bash
+    command: |
+      echo "Running playbook: {{ playbook }}"
+      if [ "{{ type }}" = "ansible" ]; then
+        ansible-playbook {{ playbook }} {{ extra_vars }}
+      else
+        bash {{ playbook }}
+      fi
+    confirm: true
+    args:
+      - name: playbook
+        type: text
+        label: "Playbook/Script Path"
+        placeholder: "/path/to/playbook.yml"
+        required: true
+      - name: type
+        type: select
+        label: "Type"
+        default: "script"
+        options:
+          - value: "ansible"
+            label: "Ansible Playbook"
+          - value: "script"
+            label: "Shell Script"
+      - name: extra_vars
+        type: text
+        label: "Extra Variables"
+        placeholder: "--extra-vars 'key=value'"
+
+  # Hardware Control (GPIO example)
+  - id: toggle-gpio-light
+    title: "Toggle GPIO Light"
+    description: "Control GPIO connected light/device"
+    icon: Lightbulb
+    category: "Hardware"
+    shell: /bin/bash
+    command: |
+      echo "Toggling GPIO pin {{ pin }}..."
+      if [ -f /sys/class/gpio/gpio{{ pin }}/value ]; then
+        current=$(cat /sys/class/gpio/gpio{{ pin }}/value)
+        if [ "$current" = "0" ]; then
+          echo "1" > /sys/class/gpio/gpio{{ pin }}/value
+          echo "Light turned ON"
+        else
+          echo "0" > /sys/class/gpio/gpio{{ pin }}/value
+          echo "Light turned OFF"
+        fi
+      else
+        echo "Error: GPIO pin {{ pin }} not available"
+        exit 1
+      fi
+    args:
+      - name: pin
+        type: number
+        label: "GPIO Pin Number"
+        default: 18
+        min: 1
+        max: 40
+
+  # AI Assistant Commands
+  - id: claude-help
+    title: "Claude AI Assistant"
+    description: "Get help and available commands from Claude AI CLI"
+    icon: Bot
+    category: "AI Tools"
+    shell: /bin/bash
+    auto_help: true
+    help_command: "claude --help 2>/dev/null || echo 'Claude CLI not installed'"
+    command: |
+      echo "=== Claude AI CLI Help ==="
+      if command -v claude &> /dev/null; then
+        claude --help
+        echo ""
+        echo "=== Available Models ==="
+        claude models 2>/dev/null || echo "Run 'claude auth' to login first"
+        echo ""
+        echo "=== Configuration ==="
+        claude config 2>/dev/null || echo "Use 'claude auth' to configure"
+      else
+        echo "❌ Claude CLI not installed"
+        echo ""
+        echo "📦 INSTALLATION OPTIONS:"
+        echo "1. npm install -g @anthropic-ai/claude-cli"
+        echo "2. pip install claude-cli"
+        echo "3. Download from: https://github.com/anthropics/claude-cli"
+        echo ""
+        echo "🔧 After installation run: claude auth"
+      fi
+
+  - id: claude-chat
+    title: "Chat with Claude"
+    description: "Start a conversation with Claude AI"
+    icon: MessageCircle
+    category: "AI Tools"
+    shell: /bin/bash
+    help_command: "claude chat --help 2>/dev/null || echo 'Start an interactive chat session with Claude AI'"
+    command: |
+      if command -v claude &> /dev/null; then
+        echo "🤖 Starting Claude AI chat session..."
+        echo "📝 Your message: {{ message }}"
+        echo ""
+        echo "🔄 Processing..."
+        claude chat "{{ message }}" || echo "❌ Failed to send message. Check your authentication with 'claude auth'"
+      else
+        echo "❌ Claude CLI not installed"
+        echo "📦 Install with: npm install -g @anthropic-ai/claude-cli"
+        echo "🔧 Then run: claude auth"
+        exit 1
+      fi
+    args:
+      - name: message
+        type: textarea
+        label: "Your Message"
+        placeholder: "Ask Claude anything..."
+        required: true
+        help: "Enter your question or message for Claude AI"
+
+

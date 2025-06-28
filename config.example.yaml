@@ -1,0 +1,219 @@
+# ShellUI Configuration Example
+# Copy this file to config.yaml and customize it
+
+title: "ShellUI - Modern Shell Interface"
+theme: system # Options: light, dark, system
+
+# Authentication configuration
+auth:
+  enabled: false # Set to true to enable authentication
+  users:
+    - username: admin
+      password: admin123 # Change this in production!
+      roles: [admin]
+    - username: user
+      password: user123
+      roles: [user]
+
+# Command definitions
+commands:
+  # Simple commands
+  - id: echo-test
+    title: "Echo Test"
+    description: "Simple echo command for testing"
+    icon: Terminal
+    shell: /bin/bash
+    command: echo "Test message from ShellUI!"
+    category: "Testing"
+
+  - id: current-date
+    title: "Current Date & Time"
+    description: "Shows the current date and time"
+    icon: Clock
+    shell: /bin/bash
+    command: date
+    category: "System"
+
+  # Commands with arguments
+  - id: ping-host
+    title: "Ping Host"
+    description: "Ping a host to check connectivity"
+    icon: Wifi
+    shell: /bin/bash
+    command: ping -c {{ count }} {{ host }}
+    category: "Network"
+    timeout: 10000
+    args:
+      - name: host
+        type: text
+        label: "Host or IP"
+        placeholder: "google.com"
+        required: true
+        pattern: "^[a-zA-Z0-9.-]+$"
+      - name: count
+        type: number
+        label: "Ping Count"
+        default: 4
+        min: 1
+        max: 10
+
+  - id: list-directory
+    title: "List Directory"
+    description: "List files in a directory"
+    icon: Folder
+    shell: /bin/bash
+    command: ls -la {{ directory }}
+    category: "Files"
+    args:
+      - name: directory
+        type: text
+        label: "Directory Path"
+        placeholder: "/home/user"
+        default: "."
+        required: true
+
+  # Advanced examples
+  - id: system-info
+    title: "System Information"
+    description: "Display comprehensive system information"
+    icon: Info
+    category: "System"
+    shell: /bin/bash
+    command: |
+      echo "=== SYSTEM INFORMATION ==="
+      echo ""
+      echo "Hostname: $(hostname)"
+      echo "OS: $(uname -o)"
+      echo "Kernel: $(uname -r)"
+      echo "Architecture: $(uname -m)"
+      echo ""
+      echo "=== CPU INFORMATION ==="
+      lscpu | grep -E "Model name|CPU\(s\)|Thread\(s\)"
+      echo ""
+      echo "=== MEMORY INFORMATION ==="
+      free -h
+      echo ""
+      echo "=== DISK USAGE ==="
+      df -h | grep -E "^/dev/"
+    timeout: 5000
+
+  - id: docker-ps
+    title: "Docker Containers"
+    description: "List Docker containers"
+    icon: Package
+    category: "Docker"
+    shell: /bin/bash
+    command: docker ps {{ format }}
+    args:
+      - name: format
+        type: select
+        label: "Output Format"
+        default: ""
+        options:
+          - value: ""
+            label: "Default"
+          - value: "-a"
+            label: "All containers"
+          - value: "--format table"
+            label: "Table format"
+          - value: "--format json"
+            label: "JSON format"
+
+  - id: restart-service
+    title: "Restart Service"
+    description: "Restart a system service (requires sudo)"
+    icon: RefreshCw
+    category: "System"
+    shell: /bin/bash
+    command: sudo systemctl restart {{ service }}
+    confirm: true # Ask for confirmation before executing
+    acl: [admin] # Only admin users can run this
+    args:
+      - name: service
+        type: select
+        label: "Service Name"
+        required: true
+        options:
+          - value: nginx
+            label: "Nginx Web Server"
+          - value: mysql
+            label: "MySQL Database"
+          - value: docker
+            label: "Docker Engine"
+          - value: ssh
+            label: "SSH Server"
+
+  - id: custom-script
+    title: "Run Custom Script"
+    description: "Execute a custom bash script"
+    icon: FileText
+    category: "Custom"
+    shell: /bin/bash
+    command: |
+      #!/bin/bash
+      echo "Starting custom script..."
+      echo "Parameter 1: {{ param1 }}"
+      echo "Parameter 2: {{ param2 }}"
+      
+      if [[ "{{ verbose }}" == "true" ]]; then
+        echo "Verbose mode enabled"
+        set -x
+      fi
+      
+      # Your custom logic here
+      echo "Script completed!"
+    args:
+      - name: param1
+        type: text
+        label: "Parameter 1"
+        required: true
+      - name: param2
+        type: textarea
+        label: "Parameter 2 (Multi-line)"
+        placeholder: "Enter multiple lines of text..."
+      - name: verbose
+        type: boolean
+        label: "Enable verbose output"
+        default: false
+
+  - id: wake-on-lan
+    title: "Wake On LAN"
+    description: "Wake up a computer on the network"
+    icon: Power
+    category: "Network"
+    shell: /bin/bash
+    command: wakeonlan {{ mac }}
+    confirm: true
+    args:
+      - name: mac
+        type: text
+        label: "MAC Address"
+        placeholder: "AA:BB:CC:DD:EE:FF"
+        pattern: "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+        required: true
+
+  - id: backup-database
+    title: "Backup Database"
+    description: "Create a backup of MySQL database"
+    icon: Database
+    category: "Database"
+    shell: /bin/bash
+    command: |
+      mysqldump -u root -p{{ password }} {{ database }} > /backup/{{ database }}_$(date +%Y%m%d_%H%M%S).sql
+      echo "Backup completed successfully!"
+    confirm: true
+    acl: [admin]
+    args:
+      - name: database
+        type: select
+        label: "Database"
+        required: true
+        options:
+          - value: myapp_production
+            label: "Production Database"
+          - value: myapp_staging
+            label: "Staging Database"
+      - name: password
+        type: password
+        label: "MySQL Root Password"
+        required: true 
