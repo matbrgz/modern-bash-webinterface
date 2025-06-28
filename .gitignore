@@ -59,3 +59,4 @@ bun.lockb
 config.yaml
 
 data/
+*.bkp
