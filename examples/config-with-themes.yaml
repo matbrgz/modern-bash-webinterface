@@ -1,0 +1,357 @@
+# ShellUI Configuration with Advanced Themes
+# Example configuration showcasing theme capabilities
+
+title: "ShellUI - Advanced Theme Demo"
+theme: ocean
+
+# Advanced theme configuration
+theme_config:
+  # Default theme preset
+  default_preset: "ocean"
+  
+  # Custom theme overrides
+  custom_theme:
+    name: "Meu Tema Corporativo"
+    description: "Tema personalizado para ambiente corporativo"
+    mode: "system"
+    
+    # Custom colors (HSL format)
+    colors:
+      primary: "220 90% 30%"
+      accent: "220 90% 25%"
+      background: "220 20% 98%"
+      foreground: "220 90% 10%"
+      commandSuccess: "142 76% 36%"
+      commandError: "0 84% 60%"
+      commandWarning: "38 92% 50%"
+      commandInfo: "217 91% 60%"
+    
+    # Custom typography
+    fontFamily: "Inter, system-ui, sans-serif"
+    borderRadius: "0.5rem"
+    
+    # Custom animations
+    animation:
+      duration: "0.2s"
+      easing: "ease-out"
+    
+    # Custom effects
+    effects:
+      blur: "8px"
+      shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+      glow: "0 0 20px rgba(59, 130, 246, 0.5)"
+
+  # Command-specific themes
+  command_themes:
+    # System commands - Green theme
+    - id: "system-commands"
+      conditions:
+        category: "Sistema"
+      theme:
+        colors:
+          primary: "142 76% 36%"
+          accent: "142 76% 30%"
+          commandSuccess: "142 76% 36%"
+          commandInfo: "142 76% 36%"
+    
+    # Docker commands - Blue theme
+    - id: "docker-commands"
+      conditions:
+        category: "Docker"
+      theme:
+        colors:
+          primary: "200 100% 50%"
+          accent: "200 100% 40%"
+          commandSuccess: "160 100% 40%"
+          commandInfo: "200 100% 50%"
+    
+    # Database commands - Purple theme
+    - id: "database-commands"
+      conditions:
+        category: "Database"
+      theme:
+        colors:
+          primary: "280 100% 50%"
+          accent: "280 100% 40%"
+          commandSuccess: "142 76% 36%"
+          commandInfo: "280 100% 50%"
+    
+    # Dangerous commands - Red theme
+    - id: "dangerous-commands"
+      conditions:
+        tags: ["dangerous", "system"]
+      theme:
+        colors:
+          primary: "0 84% 60%"
+          accent: "0 84% 50%"
+          commandError: "0 84% 60%"
+          commandWarning: "0 84% 60%"
+    
+    # Network commands - Orange theme
+    - id: "network-commands"
+      conditions:
+        category: "Network"
+      theme:
+        colors:
+          primary: "30 100% 50%"
+          accent: "30 100% 40%"
+          commandSuccess: "142 76% 36%"
+          commandInfo: "30 100% 50%"
+    
+    # Error state - Red theme
+    - id: "error-state"
+      conditions:
+        status: "error"
+      theme:
+        colors:
+          primary: "0 84% 60%"
+          accent: "0 84% 50%"
+          background: "0 20% 98%"
+          card: "0 20% 96%"
+    
+    # Success state - Green theme
+    - id: "success-state"
+      conditions:
+        status: "success"
+      theme:
+        colors:
+          primary: "142 76% 36%"
+          accent: "142 76% 30%"
+          background: "142 20% 98%"
+          card: "142 20% 96%"
+
+# Authentication configuration
+auth:
+  enabled: false
+  users:
+    - username: admin
+      password: admin123
+      roles: [admin]
+    - username: user
+      password: user123
+      roles: [user]
+
+# Command definitions with categories and tags
+commands:
+  # System commands (Green theme)
+  - id: system-info
+    title: "Informações do Sistema"
+    description: "Mostra informações sobre o sistema"
+    icon: Info
+    category: "Sistema"
+    shell: /bin/bash
+    command: |
+      echo "=== SISTEMA ==="
+      uname -a
+      echo ""
+      echo "=== CPU ==="
+      lscpu | grep "Model name"
+      echo ""
+      echo "=== MEMÓRIA ==="
+      free -h
+    timeout: 5000
+
+  - id: restart-service
+    title: "Reiniciar Serviço"
+    description: "Reinicia um serviço do sistema"
+    icon: RefreshCw
+    category: "Sistema"
+    tags: ["dangerous"]
+    shell: /bin/bash
+    command: sudo systemctl restart {{ service }}
+    confirm: true
+    args:
+      - name: service
+        type: select
+        label: "Serviço"
+        required: true
+        options:
+          - value: nginx
+            label: "Nginx"
+          - value: mysql
+            label: "MySQL"
+          - value: docker
+            label: "Docker"
+
+  # Docker commands (Blue theme)
+  - id: docker-ps
+    title: "Docker Containers"
+    description: "Lista Docker containers"
+    icon: Package
+    category: "Docker"
+    shell: /bin/bash
+    command: docker ps {{ format }}
+    args:
+      - name: format
+        type: select
+        label: "Output Format"
+        default: ""
+        options:
+          - value: ""
+            label: "Default"
+          - value: "-a"
+            label: "All containers"
+          - value: "--format table"
+            label: "Table format"
+          - value: "--format json"
+            label: "JSON format"
+
+  - id: docker-logs
+    title: "Docker Logs"
+    description: "Mostra logs de um container"
+    icon: FileText
+    category: "Docker"
+    shell: /bin/bash
+    command: docker logs {{ container }} {{ lines }}
+    args:
+      - name: container
+        type: text
+        label: "Container"
+        required: true
+        placeholder: "container_name"
+      - name: lines
+        type: number
+        label: "Número de linhas"
+        default: 100
+        min: 1
+        max: 1000
+
+  # Database commands (Purple theme)
+  - id: backup-database
+    title: "Backup Database"
+    description: "Cria backup do MySQL database"
+    icon: Database
+    category: "Database"
+    tags: ["dangerous"]
+    shell: /bin/bash
+    command: mysqldump -u {{ user }} -p{{ password }} {{ database }} > backup_{{ database }}_{{ date }}.sql
+    confirm: true
+    args:
+      - name: user
+        type: text
+        label: "Usuário"
+        required: true
+        default: "root"
+      - name: password
+        type: password
+        label: "Senha"
+        required: true
+      - name: database
+        type: text
+        label: "Database"
+        required: true
+        placeholder: "database_name"
+      - name: date
+        type: text
+        label: "Data (YYYYMMDD)"
+        required: true
+        default: "20241201"
+
+  # Network commands (Orange theme)
+  - id: ping-host
+    title: "Ping Host"
+    description: "Ping a host to check connectivity"
+    icon: Wifi
+    category: "Network"
+    shell: /bin/bash
+    command: ping -c {{ count }} {{ host }}
+    timeout: 10000
+    args:
+      - name: host
+        type: text
+        label: "Host or IP"
+        placeholder: "google.com"
+        required: true
+        pattern: "^[a-zA-Z0-9.-]+$"
+      - name: count
+        type: number
+        label: "Ping Count"
+        default: 4
+        min: 1
+        max: 10
+
+  - id: wake-on-lan
+    title: "Wake On LAN"
+    description: "Wake up a computer on the network"
+    icon: Power
+    category: "Network"
+    tags: ["dangerous"]
+    shell: /bin/bash
+    command: wakeonlan {{ mac }}
+    confirm: true
+    args:
+      - name: mac
+        type: text
+        label: "MAC Address"
+        placeholder: "AA:BB:CC:DD:EE:FF"
+        pattern: "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$"
+        required: true
+
+  # File commands (Default theme)
+  - id: list-directory
+    title: "List Directory"
+    description: "List files in a directory"
+    icon: Folder
+    category: "Files"
+    shell: /bin/bash
+    command: ls -la {{ directory }}
+    args:
+      - name: directory
+        type: text
+        label: "Directory Path"
+        placeholder: "/home/user"
+        default: "."
+        required: true
+
+  - id: find-files
+    title: "Find Files"
+    description: "Find files by pattern"
+    icon: Search
+    category: "Files"
+    shell: /bin/bash
+    command: find {{ directory }} -name "{{ pattern }}" -type f
+    args:
+      - name: directory
+        type: text
+        label: "Directory"
+        default: "."
+        required: true
+      - name: pattern
+        type: text
+        label: "Pattern"
+        placeholder: "*.txt"
+        required: true
+
+  # Custom commands
+  - id: custom-script
+    title: "Run Custom Script"
+    description: "Execute a custom bash script"
+    icon: FileText
+    category: "Custom"
+    shell: /bin/bash
+    command: |
+      #!/bin/bash
+      echo "Starting custom script..."
+      echo "Parameter 1: {{ param1 }}"
+      echo "Parameter 2: {{ param2 }}"
+      
+      if [[ "{{ verbose }}" == "true" ]]; then
+        echo "Verbose mode enabled"
+        set -x
+      fi
+      
+      # Your custom logic here
+      echo "Script completed!"
+    args:
+      - name: param1
+        type: text
+        label: "Parameter 1"
+        required: true
+      - name: param2
+        type: textarea
+        label: "Parameter 2 (Multi-line)"
+        placeholder: "Enter multiple lines of text..."
+      - name: verbose
+        type: boolean
+        label: "Enable verbose output"
+        default: false 

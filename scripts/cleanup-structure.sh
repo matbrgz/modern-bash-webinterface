@@ -1,3 +1,110 @@
+#!/bin/bash
+
+echo "🧹 Limpando estrutura duplicada do projeto..."
+
+# Remover estrutura antiga em src/
+echo "Removendo estrutura antiga em src/..."
+rm -rf src/
+
+# Mover arquivos importantes para a raiz se necessário
+echo "Movendo arquivos importantes..."
+if [ -f "packages/client/start.sh" ]; then
+    mv packages/client/start.sh ./
+fi
+
+# Atualizar package.json principal para usar workspaces
+echo "Atualizando package.json principal..."
+cat > package.json << 'EOF'
+{
+  "name": "shellui",
+  "version": "1.0.0",
+  "description": "Modern web interface for running shell commands with advanced theming",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "dev": "cd packages/client && npm run dev",
+    "dev:server": "cd packages/server && npm run dev",
+    "build": "npm run build --workspaces",
+    "build:client": "cd packages/client && npm run build",
+    "build:server": "cd packages/server && npm run build",
+    "build:sdk": "cd packages/sdk && npm run build",
+    "start": "./start.sh",
+    "clean": "rm -rf node_modules packages/*/node_modules examples/*/node_modules",
+    "install:all": "npm install && npm run install:workspaces",
+    "install:workspaces": "npm install --workspaces",
+    "example:custom": "cd examples/custom-frontend && npm run dev"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/shellui.git"
+  },
+  "keywords": [
+    "shell",
+    "web-interface",
+    "terminal",
+    "theming",
+    "react",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
+EOF
+
+# Criar arquivo de configuração do workspace
+echo "Criando .yarnrc.yml..."
+cat > .yarnrc.yml << 'EOF'
+nodeLinker: node-modules
+enableGlobalCache: true
+compressionLevel: mixed
+
+plugins:
+  - path: .yarn/plugins/@yarnpkg/plugin-workspace-tools.cjs
+    spec: "@yarnpkg/plugin-workspace-tools"
+
+yarnPath: .yarn/releases/yarn-4.0.2.cjs
+EOF
+
+# Atualizar .gitignore
+echo "Atualizando .gitignore..."
+cat >> .gitignore << 'EOF'
+
+# Workspace files
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Build outputs
+packages/*/dist/
+packages/*/build/
+examples/*/dist/
+examples/*/build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+EOF
+
+# Criar README atualizado
+echo "Criando README atualizado..."
+cat > README.md << 'EOF'
 # ShellUI - Modern Web Interface for Shell Commands
 
 Uma interface web moderna para executar comandos shell com sistema de temas avançado e SDK para customização.
@@ -169,3 +276,6 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 - [TypeScript](https://www.typescriptlang.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [ElysiaJS](https://elysiajs.com/)
+EOF
+
+echo "✅ Limpeza concluída!"

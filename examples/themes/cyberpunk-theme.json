@@ -1,0 +1,73 @@
+{
+  "name": "Cyberpunk",
+  "description": "Tema inspirado no estilo cyberpunk com cores neon e efeitos futuristas",
+  "mode": "dark",
+  "colors": {
+    "background": "240 10% 4%",
+    "foreground": "0 100% 100%",
+    "card": "240 10% 8%",
+    "cardForeground": "0 100% 100%",
+    "popover": "240 10% 8%",
+    "popoverForeground": "0 100% 100%",
+    "primary": "300 100% 50%",
+    "primaryForeground": "0 0% 0%",
+    "secondary": "240 10% 12%",
+    "secondaryForeground": "0 100% 100%",
+    "muted": "240 10% 12%",
+    "mutedForeground": "240 5% 65%",
+    "accent": "180 100% 50%",
+    "accentForeground": "0 0% 0%",
+    "destructive": "0 100% 50%",
+    "destructiveForeground": "0 0% 0%",
+    "border": "240 10% 12%",
+    "input": "240 10% 12%",
+    "ring": "300 100% 50%",
+    "chart1": "300 100% 50%",
+    "chart2": "180 100% 50%",
+    "chart3": "60 100% 50%",
+    "chart4": "0 100% 50%",
+    "chart5": "240 100% 50%",
+    "sidebarBackground": "240 10% 2%",
+    "sidebarForeground": "0 100% 100%",
+    "sidebarPrimary": "300 100% 50%",
+    "sidebarPrimaryForeground": "0 0% 0%",
+    "sidebarAccent": "240 10% 6%",
+    "sidebarAccentForeground": "0 100% 100%",
+    "sidebarBorder": "240 10% 6%",
+    "sidebarRing": "300 100% 50%",
+    "commandSuccess": "180 100% 50%",
+    "commandError": "0 100% 50%",
+    "commandWarning": "60 100% 50%",
+    "commandInfo": "240 100% 50%",
+    "shadow": "300 100% 50%",
+    "glow": "300 100% 50%"
+  },
+  "borderRadius": "0.25rem",
+  "fontFamily": "JetBrains Mono, Consolas, monospace",
+  "fontSize": {
+    "xs": "0.75rem",
+    "sm": "0.875rem",
+    "base": "1rem",
+    "lg": "1.125rem",
+    "xl": "1.25rem",
+    "2xl": "1.5rem",
+    "3xl": "1.875rem"
+  },
+  "spacing": {
+    "xs": "0.25rem",
+    "sm": "0.5rem",
+    "md": "1rem",
+    "lg": "1.5rem",
+    "xl": "2rem",
+    "2xl": "3rem"
+  },
+  "animation": {
+    "duration": "0.3s",
+    "easing": "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "effects": {
+    "blur": "12px",
+    "shadow": "0 8px 32px rgba(255, 0, 255, 0.3)",
+    "glow": "0 0 30px rgba(255, 0, 255, 0.6)"
+  }
+} 

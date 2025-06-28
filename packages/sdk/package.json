@@ -1,0 +1,35 @@
+{
+  "name": "@shellui/sdk",
+  "version": "1.0.0",
+  "description": "ShellUI SDK for advanced customization",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@shellui/shared": "workspace:*",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "keywords": [
+    "shellui",
+    "sdk",
+    "customization",
+    "themes",
+    "react"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+} 
